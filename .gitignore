@@ -1,0 +1,21 @@
+# Build output
+.gradle/
+build/
+app/build/
+
+# Local configuration and signing material
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# APKs (the release APK is uploaded as a GitHub Release asset)
+*.apk
+
+# Temporary diagnostics
+.release-manifest.xml
+.release-notes.md
+
+# IDE
+.idea/
+*.iml

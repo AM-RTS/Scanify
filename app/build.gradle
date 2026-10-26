@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.scanify.assist'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.scanify.assist'
+        minSdk 30
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Keep the existing local key so this release installs over the working build.
+            signingConfig signingConfigs.debug
+        }
+    }
+}
