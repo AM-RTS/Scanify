@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,11 +21,9 @@ final class CaptureFlow {
         File file = new File(context.getCacheDir(), SCREENSHOT_FILE);
         try (FileOutputStream out = new FileOutputStream(file)) {
             if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
-                Toast.makeText(context, R.string.save_failed, Toast.LENGTH_LONG).show();
                 return null;
             }
         } catch (IOException e) {
-            Toast.makeText(context, R.string.save_failed, Toast.LENGTH_LONG).show();
             return null;
         }
         return ScreenshotProvider.uri();

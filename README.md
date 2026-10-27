@@ -78,6 +78,13 @@ adb logcat -s Scanify
 
 A working run shows `voice session shown, flags=…` and `onHandleScreenshot: WIDTHxHEIGHT`. If MIUI starts the activity path instead, the app shows a toast saying so and exits. If no screenshot arrives, it shows the “no system screenshot” toast.
 
+## Responsiveness
+
+- The assistant session window is transparent; Scanify does not draw a full-screen UI.
+- The PNG encode and cache write run on a background thread (`scanify-save`), not the main thread.
+- `adb logcat -s Scanify` reports the timing: `onHandleScreenshot: 1080x2340 (+Xms)` and `screenshot saved in Yms`.
+- A brief black frame can still come from Lens's own cold start. That part is outside Scanify.
+
 ## Build
 
 ```text
@@ -91,7 +98,7 @@ The release build intentionally uses `signingConfigs.debug` for personal sideloa
 ## Implementation
 
 - `ScanifyVoiceInteractionService` — selected assistant service.
-- `ScanifySessionService` / `ScanifySession` — receives the platform screenshot and opens Lens.
+- `ScanifySessionService` / `ScanifySession` — receives the platform screenshot, saves it off the main thread, and opens Lens.
 - `ScanifyRecognitionService` — required no-op recognition stub; no microphone use.
 - `ScreenshotProvider` — read-only content provider for the PNG; Lens gets a URI read grant.
 - `AssistActivity` — kept as the `ACTION_ASSIST` entry point; it only shows a toast if a ROM uses the activity path.

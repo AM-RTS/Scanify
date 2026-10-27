@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.service.voice.VoiceInteractionSession;
 import android.util.Log;
 import android.view.View;
@@ -28,6 +29,8 @@ public class ScanifySession extends VoiceInteractionSession {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable timeoutRunnable = this::noScreenshot;
+    private volatile boolean hidden;
+    private long shownAt;
     private boolean handled;
 
     ScanifySession(Context context) {
@@ -43,6 +46,8 @@ public class ScanifySession extends VoiceInteractionSession {
     public void onShow(Bundle args, int showFlags) {
         super.onShow(args, showFlags);
         Log.i(TAG, "voice session shown, flags=" + showFlags);
+        shownAt = SystemClock.uptimeMillis();
+        hidden = false;
         handled = false;
         handler.removeCallbacks(timeoutRunnable);
         makeWindowInvisible();
@@ -57,8 +62,10 @@ public class ScanifySession extends VoiceInteractionSession {
 
     @Override
     public void onHandleScreenshot(Bitmap screenshot) {
+        long shotAt = SystemClock.uptimeMillis();
         Log.i(TAG, "onHandleScreenshot: "
-                + (screenshot == null ? "null" : screenshot.getWidth() + "x" + screenshot.getHeight()));
+                + (screenshot == null ? "null" : screenshot.getWidth() + "x" + screenshot.getHeight())
+                + " (+" + (shotAt - shownAt) + "ms)");
 
         if (handled) {
             if (screenshot != null) {
@@ -74,17 +81,30 @@ public class ScanifySession extends VoiceInteractionSession {
         handled = true;
         handler.removeCallbacks(timeoutRunnable);
 
-        Uri uri = CaptureFlow.saveScreenshot(getContext(), screenshot);
-        screenshot.recycle();
-        if (uri == null) {
-            finish();
-            return;
-        }
-        launchLens(uri);
+        final Bitmap bitmap = screenshot;
+        new Thread(() -> {
+            Uri uri = CaptureFlow.saveScreenshot(getContext(), bitmap);
+            bitmap.recycle();
+            long savedAt = SystemClock.uptimeMillis();
+            getContext().getMainExecutor().execute(() -> {
+                if (uri == null) {
+                    Toast.makeText(getContext(), R.string.save_failed, Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
+                }
+                if (hidden) {
+                    finish();
+                    return;
+                }
+                Log.i(TAG, "screenshot saved in " + (savedAt - shotAt) + "ms");
+                launchLens(uri);
+            });
+        }, "scanify-save").start();
     }
 
     @Override
     public void onHide() {
+        hidden = true;
         handler.removeCallbacks(timeoutRunnable);
         super.onHide();
     }
