@@ -6,6 +6,8 @@ Hold Home → the system gives Scanify the current screen → Google Lens.
 
 Android 11+ · no accessibility service · no MediaProjection · no accessibility permission.
 
+> **Unofficial.** Scanify is an independent project. It is not affiliated with, endorsed by, or sponsored by Google. Google Lens, Google Assistant, Android, and Gemini are trademarks of Google LLC.
+
 ## Background
 
 Google Assistant's screen search was replaced by Gemini, and Gemini does not hand the current screen to Google Lens. On MIUI the **Assist and voice input** settings still expose **Use text from screen** and **Use screenshot**, but the screenshot side is part of the platform assistant API: a `VoiceInteractionService` session receives it through `onHandleScreenshot(Bitmap)` when shown with `SHOW_WITH_SCREENSHOT`. An `ACTION_ASSIST` activity only receives the assist text/structure, not pixels.
@@ -52,7 +54,7 @@ The app requests only:
 - `RECEIVE_BOOT_COMPLETED` — to post the reselect reminder after boot.
 - `POST_NOTIFICATIONS` — to show that reminder on Android 13+.
 
-No dangerous permissions, no internet permission, no accessibility service. The screenshot is saved as `screen.png` in the app cache (overwritten on each capture) and shared only with Lens. Scanify does not upload anything.
+No dangerous permissions, no internet permission, no accessibility service. The screenshot is encoded in memory and streamed to Lens through the provider; Scanify does not write a screenshot file, and it does not upload anything.
 
 ## If Home does not open Lens
 
@@ -81,8 +83,9 @@ A working run shows `voice session shown, flags=…` and `onHandleScreenshot: WI
 ## Responsiveness
 
 - The assistant session window is transparent; Scanify does not draw a full-screen UI.
-- The PNG encode and cache write run on a background thread (`scanify-save`), not the main thread.
-- `adb logcat -s Scanify` reports the timing: `onHandleScreenshot: 1080x2340 (+Xms)` and `screenshot saved in Yms`.
+- The PNG encode runs on a background thread (`scanify-encode`) and stays in memory; no screenshot file is written.
+- `ScreenshotProvider` serves the bytes through a pipe for every Lens open, because Lens opens the URI more than once.
+- `adb logcat -s Scanify` reports the timing: `onHandleScreenshot: 1080x2340 (+Xms)` and `screenshot encoded in Yms`.
 - A brief black frame can still come from Lens's own cold start. That part is outside Scanify.
 
 ## Build
@@ -98,9 +101,9 @@ The release build intentionally uses `signingConfigs.debug` for personal sideloa
 ## Implementation
 
 - `ScanifyVoiceInteractionService` — selected assistant service.
-- `ScanifySessionService` / `ScanifySession` — receives the platform screenshot, saves it off the main thread, and opens Lens.
+- `ScanifySessionService` / `ScanifySession` — receives the platform screenshot, encodes it off the main thread, and opens Lens.
 - `ScanifyRecognitionService` — required no-op recognition stub; no microphone use.
-- `ScreenshotProvider` — read-only content provider for the PNG; Lens gets a URI read grant.
+- `ScreenshotProvider` — memory-backed read-only provider; each Lens open gets a pipe over the encoded bytes.
 - `AssistActivity` — kept as the `ACTION_ASSIST` entry point; it only shows a toast if a ROM uses the activity path.
 - `BootReceiver` — posts a reselect reminder if the voice session is not selected at boot.
 
@@ -113,4 +116,4 @@ The release build intentionally uses `signingConfigs.debug` for personal sideloa
 
 ## Lens handoff
 
-`GoogleLens.apk` was decompiled for reference: `com.google.ar.lens/com.google.vr.apps.ornament.app.lens.LensLauncherActivity` is exported and accepts `ACTION_SEND` with `image/jpeg` and `image/png`, reading `Intent.EXTRA_STREAM` as a `Uri`. Scanify supplies that URI through its read-only provider with `FLAG_GRANT_READ_URI_PERMISSION`, so Lens reads the PNG directly and no copy is left in the gallery.
+`GoogleLens.apk` was decompiled for reference: `com.google.ar.lens/com.google.vr.apps.ornament.app.lens.LensLauncherActivity` is exported and accepts `ACTION_SEND` with `image/jpeg` and `image/png`, reading `Intent.EXTRA_STREAM` as a `Uri`. Scanify supplies that URI through its memory-backed provider with `FLAG_GRANT_READ_URI_PERMISSION`, so Lens reads the PNG stream directly and no copy is left in the gallery.

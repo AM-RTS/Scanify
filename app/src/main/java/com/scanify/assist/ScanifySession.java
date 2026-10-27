@@ -83,11 +83,11 @@ public class ScanifySession extends VoiceInteractionSession {
 
         final Bitmap bitmap = screenshot;
         new Thread(() -> {
-            Uri uri = CaptureFlow.saveScreenshot(getContext(), bitmap);
+            byte[] png = CaptureFlow.encodeScreenshot(bitmap);
             bitmap.recycle();
             long savedAt = SystemClock.uptimeMillis();
             getContext().getMainExecutor().execute(() -> {
-                if (uri == null) {
+                if (png == null) {
                     Toast.makeText(getContext(), R.string.save_failed, Toast.LENGTH_LONG).show();
                     finish();
                     return;
@@ -96,10 +96,11 @@ public class ScanifySession extends VoiceInteractionSession {
                     finish();
                     return;
                 }
-                Log.i(TAG, "screenshot saved in " + (savedAt - shotAt) + "ms");
-                launchLens(uri);
+                ScreenshotProvider.setScreenshot(png);
+                Log.i(TAG, "screenshot encoded in " + (savedAt - shotAt) + "ms");
+                launchLens(ScreenshotProvider.uri());
             });
-        }, "scanify-save").start();
+        }, "scanify-encode").start();
     }
 
     @Override

@@ -20,7 +20,8 @@
     <string name="step_lens_hint">The screenshot is shared directly to the installed Google Lens app.</string>
 
     <string name="test">How to test the voice path</string>
-    <string name="privacy">The screenshot is saved in Scanify cache and shared only with Lens. Scanify does not upload anything.</string>
+    <string name="privacy">The screenshot is encoded in memory and streamed to Google Lens. Scanify does not write a screenshot file or upload anything.</string>
+    <string name="disclaimer">Scanify is an unofficial, independent app. It is not affiliated with, endorsed by, or sponsored by Google. Google Lens, Google Assistant, Android, and Gemini are trademarks of Google LLC.</string>
 
     <string name="save_failed">Could not save the screenshot</string>
     <string name="share_failed">Could not open Google Lens</string>

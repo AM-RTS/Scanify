@@ -113,5 +113,14 @@
             android:text="@string/privacy"
             android:textColor="?android:attr/textColorSecondary"
             android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:lineSpacingExtra="2dp"
+            android:text="@string/disclaimer"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

@@ -12,6 +12,8 @@ import android.provider.Settings;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+
 public class MainActivity extends Activity {
     private static final String LENS_PACKAGE = "com.google.ar.lens";
 
@@ -31,6 +33,11 @@ public class MainActivity extends Activity {
         findViewById(R.id.btn_assistant).setOnClickListener(v -> openAssistantSettings());
         findViewById(R.id.btn_test).setOnClickListener(v -> testCapture());
         requestNotificationPermission();
+
+        File oldScreenshot = new File(getCacheDir(), "screen.png");
+        if (oldScreenshot.exists()) {
+            oldScreenshot.delete();
+        }
     }
 
     @Override
